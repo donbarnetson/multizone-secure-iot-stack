@@ -1,19 +1,21 @@
-# MultiZone Secure IoT Stack
+# MultiZone Security Trusted Execution Environment SDK
 
-Open Source Software for Developing Secure Applications on RISC-V processors using Hex Five's MultiZone Security Trusted Execution Environment.
+The respository contains the head of MultiZone Security's SDK.  
 
-This repository, maintained by Hex Five Security, makes it easy to build a robust Secure IoT Stack with four Zones based on MultiZone Security.
+MultiZone Security provides policy-based hardware-enforced separation for an unlimited number of security domains, with full control over data, code, peripherals and interrupts. 
+
+MultiZone Security SDK currently supports the following cores / boards:
+ - SiFive E31 - RV32ACIMU Core for Xilinx A7-35T Arty
+ - SiFIve E51 - RV64ACIMU Core for Xilinx A7-35T Arty
+ 
+This repository, maintained by Hex Five Security, makes it easy to build robust Trusted Execution Environments on RISC-V cores.
+For Questions or feedback - send email to info 'at' hex-five.com
 
 ### Installation ###
 
-Hex Five created a modified version of the Rocket bitstream called teh X300 with an additional Ethernet port and improved performance 
+Upload the bitstream to the Arty board following directions from SiFive - https://sifive.cdn.prismic.io/sifive%2Fed96de35-065f-474c-a432-9f6a364af9c8_sifive-e310-arty-gettingstarted-v1.0.6.pdf
 
-Upload the X300 Bitstream to a Xilinx Artik-7 35T Arty FPGA board
-prerequisites: Xilinx Vivado, Olimex ARM-USB-TINY-H Debugger
- - Download the X300 bitstream .mcs file from https://github.com/hex-five/multizone-fpga/releases
- - Push the .mcs file to the Arty board using Vivado
- 
- Install the certified RISC-V toolchain for Linux - directions specific to a fresh Ubuntu 18.04 LTS, other Linux distros generally a subset
+Install the certified RISC-V toolchain for Linux - directions specific to a fresh Ubuntu 18.04 LTS, other Linux distros generally a subset
  ```
  sudo apt update
  sudo apt upgrade -y
@@ -23,7 +25,7 @@ prerequisites: Xilinx Vivado, Olimex ARM-USB-TINY-H Debugger
  tar -xvf riscv-gnu-toolchain-20181226.tar.xz
  wget https://github.com/hex-five/multizone-sdk/releases/download/v0.1.0/riscv-openocd-20181226.tar.xz
  tar -xvf riscv-openocd-20181226.tar.xz
- git clone https://github.com/hex-five/multizone-secure-iot-stack
+ git clone https://github.com/hex-five/multizone-sdk
  sudo apt-get install libusb-0.1-4
  sudo apt-get install screen
 ```
@@ -32,7 +34,7 @@ If you have not already done so, you need to edit or create a file to place the 
 ```
 sudo vi /etc/udev/rules.d/99-openocd.rules
 ```
-Then place the following text in that file
+Then place the following text in that file if it is not already there
 ```
 # These are for the HiFive1 Board
 SUBSYSTEM=="usb", ATTR{idVendor}=="0403",
@@ -60,7 +62,7 @@ Close and restart the terminal session for these changes to take effect.
 ### Compile and Upload the Project to the Arty Board ###
 
 ```
-cd multizone-secure-iot-stack/
+cd multizone-sdk/
 make clean
 make
 ```
@@ -72,17 +74,38 @@ make load
 
 ### Operate the Demo ###
 
-The system contains four zones:
- - Zone 1: FreeRTOS with three tasks - CLI, LED PWM and Robot Control plus three interrupt handlers (BTN0-2) 
-   - Press enter for a list of support commands
- - Zone 2: TCP/IP + TLS Stack (picoTCP + wolfSSL) - accessable via ethernet port
-   - Ping to 192.168.0.2 (default address, set in Makefile)
-   - Telnet to port 23
-   - Secure telnet (TLS) to port 443
- - Zone 3: Root of Trust and Session Key Storage
- - Zone 4: UART COnsole - access via USB UART at 115,200 buard 8N1
-   - Press enter for a list of supported commands
-
+The system contains three zones:
+ - Zone 1: UART Console (115200 baud, 8N1) with commands that enable the following:
+   - load, store exec - issue discrete load / store / exec commands to test the boundaries of physical memory protection in Zone 1
+     - invalid commands generate hardware exceptions that send a response to the user via handlers that are registered in main.c
+   - send / recv messages to / from other zones
+   - timer - set a soft timer in ms 
+   - yield - measure the round trip time through three zones when you yield context
+   - stats - complete a number of yield commands and calculate statistics on performance
+   - restart - restart the console
+ - Zone 2: LED PWM + Interrupts
+   - This Zone is running a modified version of SiFive's coreplexip_welcome demo with trap and emulate functions
+   - Buttons 0-2 are mapped to interrupts in this Zone, they will cause the LED to change color for 5s and send a message to zone 1
+   - These interrupt handlers themselves can be interrupted and resumed by pressing another button before the first handler is complete
+ - Zone 3: Robot Control
+   - This zone controls a robot via GPIO; if you do not have the robot then this zone simply yields for you
+   - Robot commands are all issued ia messages from zone 1:
+     - send 3 > - unfold
+     - send 3 1 - begin recursive dance
+     - send 3 0 - stop recursive dance when it reaches home
+     - send 3 < - fold
+   - As temperature, humidity and battery life affect the robot motor speed, small adjustments can be made as follows
+     - send 3 q (open claw)
+     - send 3 a (close claw)
+     - send 3 w (lift wrist)
+     - send 3 s (drop wrist)
+     - send 3 e (lift elbow)
+     - send 3 d (drop elbow)
+     - send 3 r (lift shoulder)
+     - send 3 f (drop shoulder)
+     - send 3 t (rotate base counterclockwise)
+     - send 3 g (rotate base clockwise)
+  
 ### For More Information ###
 
 See the MultiZone Manual (Pending) or visit [http://www.hex-five.com](https://www.hex-five.com)
