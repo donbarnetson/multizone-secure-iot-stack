@@ -74,6 +74,19 @@ This will result in a HEX file that is now ready to upload to the Arty board. Th
 ```
 make load
 ```
+### Add TLS 1.3 Support to Linux ###
+
+As of Feb, 2019 - most versions of Linux do not have TLS v 1.3 support (which comes in OpenSSL v1.1.1) by default.  For Ubuntu 18.04 LTS the easiest way to add in this support is to download and compile OpenSSL 1.1.1 - it only takes a few minutes:
+
+- Fetch the tarball: ```wget https://www.openssl.org/source/openssl-1.1.1a.tar.gz```
+- Unpack tarball with ```tar -zxf openssl-1.1.1a.tar.gz && cd openssl-1.1.1a```
+- Issue the command ```./config```
+- Issue the command ```make``` (You may need to run ```sudo apt install make gcc``` before running this command successfully).
+- Run ```make test``` to check for possible errors.
+- Issue the command ```sudo make install```
+- Backup current openssl binary: ```sudo mv /usr/bin/openssl ~/tmp```
+- Create symbolic link from newly install binary to the default location: ```sudo ln -s /usr/local/bin/openssl /usr/bin/openssl```
+- Run command ```sudo ldconfig``` to update symlinks and rebuild library cache.
 
 ### Operate the Demo ###
 
